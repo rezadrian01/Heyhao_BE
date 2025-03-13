@@ -1,0 +1,24 @@
+import express from "express";
+import multer from "multer";
+import { storageUserPhoto } from "../utils/multer";
+import * as userController from "../controllers/userController";
+
+const userRoutes = express.Router();
+
+const uploadPhoto = multer({
+  storage: storageUserPhoto,
+  fileFilter(req, file, cb) {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, false);
+    }
+    cb(null, true);
+  },
+});
+
+userRoutes.post(
+  "/auth/sign-up",
+  uploadPhoto.single("photo"),
+  userController.signUp
+);
+
+export default userRoutes;
