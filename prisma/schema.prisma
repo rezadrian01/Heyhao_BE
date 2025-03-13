@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleType {
+  ADMIN
+  USER
+  OWNER
+  MEMBER
+}
+
+model Role {
+  id String @id @default(uuid()) @db.Char(36)
+  role RoleType
+  users User[]
+  room_member_roles RoomMember[]
+  @@map("roles")
+}
+
+model User {
+  id String @id @default(uuid()) @db.Char(36)
+  name String
+  email String @unique
+  password String
+  photo String
+  role_id String 
+  role Role @relation(fields: [role_id], references: [id])
+  rooms Room[] @relation("UserCreateRelation")
+  room_members RoomMember[]
+  room_messages RoomMessage[]
+  password_reset PasswordReset[]
+  owner_transactions Transaction[] @relation("TransactionOwnerRelation")
+  member_transactions Transaction[] @relation("TransactionMemberRelation")
+  payouts Payout[]
+  @@map("users")
+}
+
+enum GroupType {
+  FREE
+  PAID
+}
+
+model Group {
+  id String @id @default(uuid()) @db.Char(36)
+  name String
+  photo String
+  type GroupType
+  about String @db.Text
+  benefit String[]
+  price Int
+  created_at DateTime @default(now())
+  assets GroupAssets[]
+  transactions Transaction[]
+  @@map("groups")
+}
+
+model GroupAssets{
+  id String @id @default(uuid()) @db.Char(36)
+
+  group_id String
+  group Group @relation(fields: [group_id], references: [id])
+  filename String
+
+  @@map("group_assets")
+}
+
+model Room{
+  id String @id @default(uuid()) @db.Char(36)
+  name String?
+  is_group Boolean @default(false)
+  created_by String
+  created_by_user User @relation( "UserCreateRelation", fields: [created_by], references: [id])
+
+  members RoomMember[]
+  messages RoomMessage[]
+
+  created_at DateTime @default(now())
+  @@map("rooms")
+}
+
+model RoomMember{
+  id String @id @default(uuid()) @db.Char(36)
+  room_id String
+  room Room @relation(fields: [room_id], references: [id])
+  user_id String
+  user User @relation(fields: [user_id], references: [id])
+  role_id String
+  role Role @relation(fields: [role_id], references: [id])
+  joined_at DateTime @default(now())
+
+  @@map("room_members")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
+model RoomMessage{
+  id String @id @default(uuid()) @db.Char(36)
+  room_id String
+  room Room @relation(fields: [room_id], references: [id])
+  sender_id String
+  user User @relation(fields: [sender_id], references: [id])
+
+  content String @db.Text
+  type MessageType @default(TEXT)
+  created_at DateTime @default(now())
+
+  @@map("room_messages")
+}
+
+model PasswordReset {
+  id String @id @default(uuid()) @db.Char(36)
+  user_id String
+  user User @relation(fields: [user_id], references: [id])
+  token String
+  @@map("user_password_reset")
+}
+
+enum TransactionType{
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Transaction {
+  id String @id @default(uuid()) @db.Char(36)
+  owner_id String
+  owner User @relation("TransactionOwnerRelation", fields: [owner_id], references: [id])
+
+  user_id String
+  user User @relation("TransactionMemberRelation", fields: [user_id], references: [id])
+
+  group_id String
+  group Group @relation(fields: [group_id], references: [id])
+
+  price Int
+  type TransactionType? @default(PENDING)
+  created_at DateTime @default(now())
+  @@map("transactions")
+}
+
+model Payout {
+  id String @id @default(uuid()) @db.Char(36)
+  user_id String
+  user User @relation(fields: [user_id], references: [id])
+  amount Int
+  bank_name String
+  bank_account_number String
+  bank_account_name String
+  status TransactionType? @default(PENDING)
+  proof String? @db.Text
+
+  created_at DateTime @default(now())
+  @@map("payouts")
+}
