@@ -1,13 +1,25 @@
-import { Request, Response, NextFunction } from "express";
+import { Prisma } from "@prisma/client";
+import type { NextFunction, Request, Response } from "express";
 
-const errorHandler = (
+export default function errorHandler(
   error: Error,
   req: Request,
   res: Response,
   next: NextFunction
-): Response => {
-  console.error(error.stack);
-  return res.status(500).json({ message: "Something went wrong!" });
-};
+) {
+  const errorCatch = error;
 
-export default errorHandler;
+  console.log(error);
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    message: errorCatch?.message ?? "Something went wrong",
+  });
+}
