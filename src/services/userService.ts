@@ -2,6 +2,7 @@ import { SigninValues, SignupValues } from "../utils/schema/user";
 import * as userRepositories from "../repositories/userRepositories";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import mailtrap from "../utils/mailtrap";
 
 export const signup = async (data: SignupValues, file: Express.Multer.File) => {
   const isEmailExist = await userRepositories.isEmailExist(data.email);
@@ -50,4 +51,18 @@ export const signin = async (data: SigninValues) => {
     photo: user.photo_url,
     token,
   };
+};
+
+export const getEmailReset = async (email: string) => {
+  const data = await userRepositories.createResetPassword(email);
+  await mailtrap.send({
+    from: {
+      email: "ahmadadrian324@gmail.com",
+      name: "Mailtrap Test",
+    },
+    to: [{ email }],
+    subject: "Reset Password",
+    text: `Click this link to reset your password: ${data.token}`,
+  });
+  return true;
 };
