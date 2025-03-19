@@ -1,4 +1,8 @@
-import { SigninValues, SignupValues } from "../utils/schema/user";
+import {
+  ResetPasswordValues,
+  SigninValues,
+  SignupValues,
+} from "../utils/schema/user";
 import * as userRepositories from "../repositories/userRepositories";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -55,7 +59,7 @@ export const signin = async (data: SigninValues) => {
 
 export const getEmailReset = async (email: string) => {
   const data = await userRepositories.createResetPassword(email);
-  await mailtrap.send({
+  await mailtrap.testing.send({
     from: {
       email: "ahmadadrian324@gmail.com",
       name: "Mailtrap Test",
@@ -64,5 +68,24 @@ export const getEmailReset = async (email: string) => {
     subject: "Reset Password",
     text: `Click this link to reset your password: ${data.token}`,
   });
+  return true;
+};
+
+export const resetPassword = async (
+  data: ResetPasswordValues,
+  token: string
+) => {
+  const tokenData = await userRepositories.getResetTokenData(token);
+
+  if (!tokenData) {
+    throw new Error("Token not found");
+  }
+
+  await userRepositories.updatePassword(
+    tokenData.user.email,
+    bcrypt.hashSync(data.password, 12)
+  );
+
+  await userRepositories.deleteResetPasswordToken(tokenData.id);
   return true;
 };

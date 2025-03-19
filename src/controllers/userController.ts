@@ -1,5 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
-import { signinSchema, signupSchema } from "../utils/schema/user";
+import {
+  resetPasswordSchema,
+  signinSchema,
+  signupSchema,
+} from "../utils/schema/user";
 import fs from "node:fs";
 import * as userService from "../services/userService";
 
@@ -60,7 +64,7 @@ export const signIn = async (
     const user = await userService.signin(parse.data);
     return res.json({
       success: true,
-      message: "Create user success",
+      message: "Login Success",
       data: user,
     });
   } catch (error) {
@@ -90,6 +94,35 @@ export const getEmailReset = async (
     return res.json({
       success: true,
       message: "Email reset password has been sent",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const parse = resetPasswordSchema.safeParse(req.body);
+    if (!parse.success) {
+      const errorMessage = parse.error.issues.map(
+        (err) => `${err.path} - ${err.message}`
+      );
+      return res.status(400).json({
+        success: false,
+        message: "Validation Error",
+        detail: errorMessage,
+      });
+    }
+
+    const { token } = req.params;
+    await userService.resetPassword(parse.data, token);
+    return res.json({
+      success: true,
+      message: "Password has been updated",
     });
   } catch (error) {
     next(error);
