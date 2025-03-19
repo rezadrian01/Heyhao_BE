@@ -11,5 +11,15 @@ export const signinSchema = signupSchema.pick({
   password: true,
 });
 
+export const resetPasswordSchema = z
+  .object({
+    password: z.string(),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Password and confirm password must be the same",
+  });
+
 export type SigninValues = z.infer<typeof signinSchema>;
 export type SignupValues = z.infer<typeof signupSchema>;
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
